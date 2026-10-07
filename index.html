@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>실기</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--text:#1c1e26;--sub:#6b7080;--accent:#3b5bdb;--line:#e3e5ee;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14151a;--card:#1e2028;--text:#eef0f6;--sub:#9aa0b3;--accent:#748ffc;--line:#2d303b}}
+:root[data-theme="dark"]{--bg:#14151a;--card:#1e2028;--text:#eef0f6;--sub:#9aa0b3;--accent:#748ffc;--line:#2d303b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;display:flex;justify-content:center;padding:24px 16px}
+main{width:100%;max-width:420px}
+h1{font-size:20px;margin:8px 0 4px}
+.sub{color:var(--sub);font-size:14px;margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+input{width:100%;font-size:17px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
+button.go{width:100%;margin-top:10px;font-size:16px;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chips button{font-size:13px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--sub);cursor:pointer}
+#result{margin-top:16px;text-align:center;display:none}
+#result .who{color:var(--sub);font-size:14px}
+#result .big{font-size:40px;font-weight:800;color:var(--accent);margin:6px 0}
+#err{margin-top:12px;color:#e03131;font-size:14px;text-align:center;display:none}
+.foot{margin-top:16px;font-size:13px;color:var(--sub);text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<main>
+  <h1>오늘의 그룹 · 번호</h1>
+  <p class="sub">이름을 입력하면 오늘 배정된 그룹과 번호가 나옵니다.</p>
+  <div class="card">
+    <input id="name" placeholder="이름 입력 (예: 박선우)" autocomplete="off">
+    <button class="go" id="btn">확인</button>
+    <div class="chips" id="chips"></div>
+    <div id="err"></div>
+    <div id="result">
+      <div class="who" id="who"></div>
+      <div class="big" id="out"></div>
+    </div>
+  </div>
+  <div class="foot">
+    <div id="next"></div>
+    <div id="note"></div>
+  </div>
+</main>
+<script>
+const NAMES=["김현우","이동원","이홍국","최준호","박선우","송유찬","함승현","이주하"];
+const GROUPS=[[1,8],[9,13],[14,17],[18,22],[23,27],[28,31],[32,41],[42,48],[49,55]];
+const TOTAL=55, PER_DAY=NAMES.length, DAYS_PER_CYCLE=5; // 사용 가능 번호 44개 중 5일 x 8명 = 40개 사용
+const SEED=20261007;
+// 기준: 2026-10-07 18:00 KST(=09:00 UTC)부터 1일차. 매일 오후 6시(KST)에 교체
+const ANCHOR=Date.UTC(2026,9,7,9,0,0), DAY=86400000; // 2026-10-07 18:00 KST 시작
+const EXCLUDED=new Set([1,6,10,17,22,24,33,41,46,48,50]);
+
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuf(arr,r){
+  arr=arr.slice();
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+  return arr;
+}
+// 한 순환(5일)의 전체 배정표: schedule[day][사람index]={n:번호,l:알파벳}
+// 1~4일째: 9개 그룹 중 8개만 사용(하루 1그룹 쉼) -> 하루 안에서 그룹 중복 없음.
+// 5일째: 남은 번호로 배정. 가능한 한 서로 다른 그룹을 먼저 뽑고, 부족하면 그룹이 겹침.
+// 번호는 순환 안에서 절대 재사용하지 않음.
+function buildCycle(cycle){
+  const r=rng(SEED+cycle*7919), G=GROUPS.length;
+  // 그룹별 남은 번호: 6,4,3,4,4,4,8,5,6
+  // 3그룹(idx2)은 번호가 3개뿐이라 4일 중 1번 쉬고, 나머지 3번은 2·4·5·6그룹(idx1,3,4,5) 중 서로 다른 3곳이 쉼
+  // -> 5일째에 남는 번호가 7개 그룹에 퍼져 그룹 겹침이 최소(한 쌍)가 됨
+  const skips=shuf([2].concat(shuf([1,3,4,5],r).slice(0,3)),r);
+  const pools=GROUPS.map(g=>{const a=[];for(let n=g[0];n<=g[1];n++)if(!EXCLUDED.has(n))a.push(n);return shuf(a,r)});
+  const withLetters=nums=>{const n=shuf(nums,r), l=shuf("ABCDEFGH".split(""),r);return n.map((x,i)=>({n:x,l:l[i]}))};
+  const days=skips.map(skip=>{
+    const nums=[];
+    for(let g=0;g<G;g++) if(g!==skip) nums.push(pools[g].pop());
+    return withLetters(nums);
+  });
+  // 5일째: 남은 번호 중 그룹이 다양하도록 라운드별로 한 그룹에서 하나씩 뽑음
+  const picked=[];
+  while(picked.length<PER_DAY){
+    const gs=shuf(pools.map((_,g)=>g).filter(g=>pools[g].length),r).sort((a,b)=>pools[b].length-pools[a].length);
+    for(const g of gs){if(picked.length>=PER_DAY)break;picked.push(pools[g].pop())}
+  }
+  days.push(withLetters(picked));
+  return days;
+}
+function groupOf(n){return GROUPS.findIndex(g=>n>=g[0]&&n<=g[1])+1}
+function period(){
+  const now=Date.now();
+  const day=Math.floor((now-ANCHOR)/DAY); // 시작 전이면 -1
+  return {day,next:ANCHOR+(day+1)*DAY};
+}
+function lookup(name){
+  const idx=NAMES.indexOf(name); if(idx<0) return null;
+  const {day}=period();
+  const cycle=Math.floor(day/DAYS_PER_CYCLE), d=day%DAYS_PER_CYCLE;
+  const e=buildCycle(cycle)[d][idx], num=e.n;
+  return {num,letter:e.l,group:groupOf(num),cycle};
+}
+const $=id=>document.getElementById(id);
+function show(){
+  const name=$("name").value.trim(), err=$("err"), res=$("result");
+  err.style.display=res.style.display="none";
+  if(!name) return;
+  const r=lookup(name);
+  if(period().day<0){err.textContent="아직 시작 전입니다. 오늘 오후 6시부터 배정됩니다.";err.style.display="block";return}
+  if(!r){err.textContent="조원 명단에 없는 이름입니다.";err.style.display="block";return}
+  $("who").textContent=name+"님의 오늘 배정";
+  $("out").textContent=r.group+"그룹 "+r.num+"번 · "+r.letter;
+  res.style.display="block";
+}
+function tick(){
+  const {next,day}=period(), left=Math.max(0,next-Date.now());
+  const h=Math.floor(left/3600000),m=Math.floor(left%3600000/60000),s=Math.floor(left%60000/1000);
+  $("next").textContent=(day<0?"배정 시작(오늘 오후 6시)까지 ":"다음 변경(오후 6시)까지 ")+h+"시간 "+m+"분 "+s+"초";
+  const d=day<0?0:day%DAYS_PER_CYCLE;
+  $("note").textContent=day<0?"":((day>=DAYS_PER_CYCLE&&d===0)?"※ 번호를 모두 소진해 새 순환이 시작되었습니다.":"");
+  if(left>86395000||(day<0&&left<1500)) show(); // 교체 직후 화면 갱신
+}
+NAMES.forEach(n=>{const b=document.createElement("button");b.textContent=n;b.onclick=()=>{$("name").value=n;show()};$("chips").appendChild(b)});
+$("btn").onclick=show;
+$("name").addEventListener("keydown",e=>{if(e.key==="Enter")show()});
+setInterval(tick,1000);tick();
+</script>
+</body>
+</html>
