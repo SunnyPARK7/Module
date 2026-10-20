@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CC 환자 면담 플래시카드</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f5f1;--card:#fff;--tx:#222;--mut:#777;--ac:#2f6f9f;--bd:#ddd}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17191c;--card:#23272b;--tx:#eee;--mut:#9aa;--ac:#7db7e0;--bd:#3a3f44}}
+:root[data-theme="dark"]{--bg:#17191c;--card:#23272b;--tx:#eee;--mut:#9aa;--ac:#7db7e0;--bd:#3a3f44}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;width:100%;max-width:440px;align-items:center;margin-bottom:12px}
+select,button{font:inherit;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx)}
+select{flex:1;min-width:0}
+button{cursor:pointer}button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.cnt{color:var(--mut);font-size:14px;width:100%;max-width:440px;text-align:right;margin-bottom:6px}
+.card{width:100%;max-width:440px;min-height:380px;background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:pointer;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+svg{width:190px;height:226px}
+.meta{font-weight:700;font-size:18px;color:var(--ac)}
+.say{font-size:20px;line-height:1.55;background:var(--bg);padding:14px 18px;border-radius:16px}
+.hint{color:var(--mut);font-size:13px}
+.cc{font-size:28px;font-weight:800}
+.nav{display:flex;gap:10px;margin-top:14px;width:100%;max-width:440px}.nav button{flex:1}
+.wrap{overflow-x:auto}
+</style></head><body>
+<div class="bar"><select id="f"></select><button id="sh">🔀 섞기</button></div>
+<div class="cnt" id="cnt"></div>
+<div class="card" id="card" tabindex="0"></div>
+<div class="nav"><button id="pv">◀ 이전</button><button class="p" id="fl">뒤집기</button><button id="nx">다음 ▶</button></div>
+<script>
+const raw=`복통·소화불량|?||2주 전부터 명치, 왼쪽 배 하루종일, 식후 특히
+복통·소화불량|F|40|소화가 잘 안돼요. 1년전부터 윗배 명치쪽이 불편해요
+복통·소화불량|F|40|배가 아파요, 3일 전부터, 아랫배 전체
+복통·소화불량|M|50|배가 아파요, 2개월 전부터, 명치, 명치 왼쪽 아래까지
+복통·소화불량|M|64|배가 아파요. 2주전부터, 명치 부근, 왼쪽으로 뻗침, 등도 좀 아픔
+복통·소화불량|M|50|소화가 안돼요. 6개월 전부터, 식후 명치 더부룩, 과식하면 오른쪽 윗배 불편
+토혈|M|30|피를 토했어요. 1시간 전, 응급실
+혈변|M|50|변에 피. 응급실 오전 9시. 어제 저녁 6시부터
+구토|F|57|자꾸 토해요. 3일 전부터
+설사|M|35|6개월전부터 설사해요.
+황달|M|20|황달이 있대요. 2일전 건강검진
+가슴통증|M|48|가슴통증. 응급실. 2시간 전 집에서 TV 보고 있다가 갑자기
+가슴통증|F|50|가슴통증, 6개월 전부터, 가슴 중앙
+가슴통증|F|50|가슴이 아파요. 6개월 전. 명치, 왼쪽 팔 심하면 손으로 뻗침
+실신|M|25|실신했어요. 어제 저녁 10시 버스에서. 오래 서있던 중
+실신|M|30|쓰러졌어요. 오늘 근무하고 식사하러 가는 길에 쓰러졌어요.
+실신|M|42|쓰러졌어요. 오늘 근무하고 식사하러 가는 길에 쓰러졌어요.
+두근거림|F|40|3개월전부터 두근거려요.
+두근거림|F|40|오늘 아침부터 두근거려요. 3번 정도 두근거렸어요.
+고혈압|F|50|혈압이 높아요. 병원갈 때마다 떨려서 그런지
+고혈압|M|40|혈압이 높대요. 2달전 쟀어요.
+이상지질혈증|F|57|콜레스테롤 수치가 높대요.
+기침|F|57|기침을 계속 해요. 한달전부터
+기침|M|25|기침이 계속나와요. 10일전부터
+콧물/코막힘|M|42|콧물이 나와요. 3주전 감기 걸린 후 기침은 나았는데 콧물은 계속 있어요
+콧물/코막힘|M|28|콧물이 나와요. 일주일 전부터 하루종일
+객혈|F|54|입에서 피가 나요. 하루전부터
+객혈|M|26|목에서 피가 나요.
+객혈|M|38|목에서 피가 나왔어요. 3일전부터 기침하다가 같이 나와요.
+호흡곤란|F|58|2주전부터 숨쉬기가 어려워요. 계단 올라갈때, 운동할 때
+호흡곤란|M|22|오늘 아침 9시에 등교하다가 갑자기 숨이 차요
+호흡곤란|M|32|2주전부터 숨이 차요
+다뇨|F|60|1주전부터 소변을 자주 봐요
+핍뇨|M|54|2일전부터 소변량이 줄었어요
+붉은색소변|M|30|이틀전부터 소변이 빨개요. 오전에 한번 그랬어요
+붉은색소변|M|54|3일전부터 소변이 붉은색으로 나와요
+붉은색소변|M|30|이틀전부터 소변이 빨개요
+배뇨 이상|M|35|소변을 너무 자주 봐서 불편해요. 4개월전부터
+배뇨 이상|M|55|소변이 6개월전부터 시원찮게 나와요.
+배뇨 이상|F|30|2일전부터 소변을 자주 봐요
+발열|F|24|3일전부터 열이 나요
+쉽게 멍이 듦|F|25|양쪽 다리에 멍이 생겼어요
+피로|M|55|낮에 졸려요. 매일 하루종일 이래요.
+피로|M|30|6개월 전부터 피곤해요
+피로|M|52|졸려요. 하루종일
+체중 감소|M|50|체중이 빠져요. 3개월에 15kg 정도 빠졌어요.
+체중증가/비만|F|40|3개월에 7kg 증가했어요
+체중증가/비만|F|28|5개월에 4kg 증가했어요
+관절통증/부기|F|26|무릎이 아파요
+허리통증|F|31|허리가 아파요
+목통증|M|40|목이 일주일전부터 아파요
+피부 발진|M|30|일주일 전에 피부에 뭐가 생겼어요
+기분 변화|F|47|4달전부터 무기력하고 우울해요
+불안|M|28|2달전부터 불안해요
+불안|M|32|3달전부터 불안해요
+수면장애|F|68|4주전부터 우울하고 잠이 안와요
+기억력 저하|M|52|기억이 안나요
+어지럼|M|63|한시간 전에 어지러웠어요
+두통|F|46|10년전부터 두통이 있었어요
+두통|M|64|두통이 3일전부터 있어요
+경련|F|46|1시간전에 경련을 했어요
+경련|?|7개월|1주일 전부터 경련을 해요.
+근력/감각 이상|M|63|한시간 전에 팔다리 힘이 빠졌어요
+근력/감각 이상|F|61|오늘 아침부터 손에 힘이 안들어가요
+의식장애|F|60|의식이 이상해요
+떨림/운동이상|F|51|손이 떨려요
+유방통|F|35|6개월 전부터 가슴이 좀 아파요. 양쪽 다 아픈데, 오른쪽 10시 방향이 좀 더 아파요.
+유방덩이|F|49|2개월 전에 유방에 덩이를 발견했어요.
+질분비물|F|38|일주일 전부터 냉이 많아졌어요
+질출혈|F|25|2cc, 3일 전부터 질에서 피가 나요. ER 오전 10시
+월경 이상|F|24|3주전부터 생리가 안끝나요
+월경 이상|F|30|6주 전부터 생리를 안해요
+월경통|F|33|생리통이 심해요.
+산전 진찰|F|34|임신중인데 한시간 전에 속옷에 피가 비쳤어요.
+산전 진찰|F|35|임신 35주차, 어제 오후 10시부터 배가 아파요.
+성장/발달지연|F|15개월|아이가 잘 못 걸어요.
+성장/발달지연|M|10|아이가 키가 좀 작은 것 같아요.
+예방접종|F|14개월|아이 수두 접종 맞으러 왔어요. 잘 크고 있는지도 확인하고 싶어요.
+예방접종|F|6|아이 예방접종하러 왔어요. 잘 크고 있는지도 같이 봐주세요.
+금연상담|F|27|담배 끊으려고 왔어요
+금주상담|M|35|술 끊는 것 상담하러 왔어요
+물질 오남용|M|30|페치딘 처방 받으러 왔어요
+물질 오남용|F|52|약 끊으러 왔어요
+나쁜 소식 전하기|M|63|결과 들으러 왔어요
+가정 폭력|M|36|소화가 안되어서 왔어요. (눈에 멍 있음)
+성폭력|F|21|성폭력을 당했어요
+자살|F|40|자살을 할 것 같아서 왔어요.
+자살|F|38|죽으려고 번개탄 피웠다가 발에 떨어져서 화상 입어서 왔어요.`;
+const all=raw.split('\n').map(l=>{const [cc,s,a,t]=l.split('|');return{cc,s,a,t}});
+const ccs=[...new Set(all.map(c=>c.cc))];
+let deck=all.slice(),i=0,back=false;
+const $=id=>document.getElementById(id);
+$('f').innerHTML='<option value="">전체 ('+all.length+'장)</option>'+ccs.map(c=>`<option>${c}</option>`).join('');
+function num(a){if(!a)return 40;return a.includes('개월')?parseFloat(a)/12:parseFloat(a)}
+function av(s,a){const n=num(a),hc=n>=60?'#cfcfcf':n>=45?'#7a7a7a':'#2b2118',sk='#f1c9a5',bc=s==='F'?'#d98aa0':s==='M'?'#6c8ebf':'#9aa5ad';
+const k=n<3?.8:n<13?.85:1,ty=n<3?30:n<13?22:0,hd=n<3?36:32;
+let h='';
+if(s==='F'&&n>=3)h+=`<path d="M26 70Q22 20 60 22Q98 20 94 70L94 102L82 102L82 60L38 60L38 102L26 102Z" fill="${hc}"/>`;
+h+=`<path d="M20 140Q20 102 60 100Q100 102 100 140Z" fill="${bc}"/><circle cx="60" cy="62" r="${hd}" fill="${sk}"/>`;
+if(n<3)h+=`<path d="M52 30Q60 24 68 30" stroke="${hc}" stroke-width="3" fill="none"/>`;
+else if(s==='F')h+=`<path d="M28 62Q26 24 60 24Q94 24 92 62Q80 40 60 42Q40 40 28 62Z" fill="${hc}"/>`;
+else h+=`<path d="M29 58Q28 26 60 26Q92 26 91 58Q82 44 60 44Q38 44 29 58Z" fill="${hc}"/>`;
+h+=`<circle cx="48" cy="64" r="3" fill="#333"/><circle cx="72" cy="64" r="3" fill="#333"/><path d="M50 80Q60 88 70 80" stroke="#a05050" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+if(n>=55)h+=`<path d="M44 50H52M68 50H76M45 72Q42 80 46 86M75 72Q78 80 74 86" stroke="#b08868" stroke-width="1.5" fill="none"/>`;
+return `<svg viewBox="0 0 120 140"><g transform="translate(${60-60*k} ${ty}) scale(${k})">${h}</g></svg>`}
+function av2(s,a,t){
+const n=num(a),M=s==='M',F=s==='F',inf=n<3,ch=n<13;
+const rx=inf?40:ch?35:M?35:32,ry=inf?37:ch?36:40,cy=inf?112:ch?104:88,top=inf?150:ch?142:130;
+const L=80-rx,R=80+rx,sk=n>=65?'#ecc7a4':'#f3cfae',dk='#c99872';
+const hc=n<45?'#2a1f1a':n<60?'#555':n<70?'#9b9b9b':'#e8e8e8',st='stroke="#0004" stroke-width="1"';
+const sick=/아파|통증|피를|피가|피로|응급|숨|죽|쓰러|경련|성폭력|힘이|토해|열이/.test(t||'')&&!/피곤/.test(t||'');
+const cl=inf?'#bfe3d0':ch?(F?'#e58aa5':'#e0a63a'):F?(n>=60?'#7a9e8e':'#c97a93'):M?(n>=60?'#8a7f6a':'#5b7fa6'):'#9aa5ad';
+const bw=inf?34:ch?44:M?64:54;
+let h='<circle cx="80" cy="100" r="82" fill="rgba(120,150,180,.16)"/>';
+if(F&&!ch&&n<60){const e=n<40?cy+46:cy+16;h+=`<path d="M${L-6} ${e}Q${L-10} ${cy-ry-8} 80 ${cy-ry-8}Q${R+10} ${cy-ry-8} ${R+6} ${e}Z" fill="${hc}" ${st}/>`}
+if(F&&ch&&!inf)h+=`<circle cx="${L-6}" cy="${cy+8}" r="10" fill="${hc}"/><circle cx="${R+6}" cy="${cy+8}" r="10" fill="${hc}"/><circle cx="${L+2}" cy="${cy-22}" r="4" fill="#e5547a"/><circle cx="${R-2}" cy="${cy-22}" r="4" fill="#e5547a"/>`;
+h+=`<rect x="70" y="${cy+ry-10}" width="20" height="${top-cy-ry+14}" fill="${dk}"/><path d="M${80-bw-10} 190Q${80-bw-10} ${top+6} 80 ${top}Q${80+bw+10} ${top+6} ${80+bw+10} 190Z" fill="${cl}"/>`;
+h+=F&&!ch?`<path d="M66 ${top+1}L80 ${top+22}L94 ${top+1}Z" fill="${sk}"/>`:(M||n>=13)&&!ch?`<path d="M66 ${top}L80 ${top+18}L72 ${top+24}L58 ${top+8}Z M94 ${top}L80 ${top+18}L88 ${top+24}L102 ${top+8}Z" fill="#fff"/>`:`<path d="M66 ${top}Q80 ${top+16} 94 ${top}Z" fill="${sk}"/>`;
+h+=`<circle cx="${L}" cy="${cy+4}" r="6" fill="${sk}"/><circle cx="${R}" cy="${cy+4}" r="6" fill="${sk}"/><rect x="${L}" y="${cy-ry}" width="${2*rx}" height="${2*ry}" rx="${M&&!ch?26:rx}" fill="${sk}"/>`;
+if(M&&n>=18)h+=`<path d="M${L+3} ${cy+6}Q${L+3} ${cy+ry-1} 80 ${cy+ry-1}Q${R-3} ${cy+ry-1} ${R-3} ${cy+6}Q80 ${cy+20} ${L+3} ${cy+6}Z" fill="#000" opacity=".09"/>`;
+if(F||ch)h+=`<circle cx="${L+11}" cy="${cy+13}" r="6" fill="#f08a8a" opacity=".3"/><circle cx="${R-11}" cy="${cy+13}" r="6" fill="#f08a8a" opacity=".3"/>`;
+const cap=fd=>`<path d="M${L-1} ${cy-2}Q${L-3} ${cy-ry-10} 80 ${cy-ry-9}Q${R+3} ${cy-ry-10} ${R+1} ${cy-2}Q${R-4} ${cy-ry+fd} 80 ${cy-ry+fd-4}Q${L+4} ${cy-ry+fd} ${L-1} ${cy-2}Z" fill="${hc}" ${st}/>`;
+if(inf)h+=`<path d="M68 ${cy-ry+3}Q74 ${cy-ry-9} 82 ${cy-ry+1}" stroke="${hc}" stroke-width="3" fill="none"/>`;
+else if(F&&n>=60){for(const x of[-26,-13,0,13,26])h+=`<circle cx="${80+x}" cy="${cy-ry+(Math.abs(x)>20?8:-2)}" r="14" fill="${hc}" ${st}/>`;h+=`<circle cx="${L-1}" cy="${cy-12}" r="9" fill="${hc}" ${st}/><circle cx="${R+1}" cy="${cy-12}" r="9" fill="${hc}" ${st}/>`}
+else if(M&&n>=58)h+=`<ellipse cx="${L+4}" cy="${cy-8}" rx="6" ry="16" fill="${hc}" ${st}/><ellipse cx="${R-4}" cy="${cy-8}" rx="6" ry="16" fill="${hc}" ${st}/><ellipse cx="76" cy="${cy-ry+6}" rx="10" ry="3" fill="#fff" opacity=".35"/>`;
+else h+=cap(F?16:ch?13:9);
+const by=cy-14,mw=M&&!ch?3.6:2.2;
+for(const g of[-1,1]){const x1=80+g*21,x2=80+g*5;h+=`<path d="${sick?`M${x1} ${by+2}L${x2} ${by-3}`:`M${x1} ${by}Q${80+g*13} ${by-5} ${x2} ${by}`}" stroke="${n>=60?'#888':'#2a1f1a'}" stroke-width="${mw}" fill="none" stroke-linecap="round"/>`;
+h+=`<ellipse cx="${80+g*13}" cy="${cy-3}" rx="${inf?7:ch?6.5:6}" ry="${inf?6:ch?5.5:4}" fill="#fff"/><circle cx="${80+g*13}" cy="${cy-3}" r="${inf?4:3}" fill="#2a1f1a"/><circle cx="${80+g*13+1}" cy="${cy-4}" r="1" fill="#fff"/>`}
+h+=`<path d="M80 ${cy+2}Q75 ${cy+13} 81 ${cy+14}" stroke="${dk}" stroke-width="1.8" fill="none"/>`;
+const my=cy+(inf||ch?24:27);
+h+=inf&&sick?`<ellipse cx="80" cy="${my}" rx="5" ry="4" fill="#b05060"/>`:F&&!ch?`<path d="M70 ${my}Q75 ${my-4} 80 ${my-2}Q85 ${my-4} 90 ${my}Q80 ${my+(sick?2:8)} 70 ${my}Z" fill="#c95b6b"/>`:`<path d="${sick?`M71 ${my+3}Q80 ${my-4} 89 ${my+3}`:`M70 ${my}Q80 ${my+6} 90 ${my}`}" stroke="#a05050" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+const w='stroke="#a8795a" stroke-width="1.3" fill="none" opacity=".6"';
+if(n>=35)h+=`<path d="M68 ${cy-25}Q80 ${cy-28} 92 ${cy-25}" ${w}/>`;
+if(n>=50)h+=`<path d="M${L+4} ${cy-4}l-6 -2M${L+4} ${cy-1}l-6 3M${R-4} ${cy-4}l6 -2M${R-4} ${cy-1}l6 3" ${w}/>`;
+if(n>=55)h+=`<path d="M66 ${cy+10}Q62 ${cy+20} 66 ${cy+28}M94 ${cy+10}Q98 ${cy+20} 94 ${cy+28}M70 ${cy-30}Q80 ${cy-33} 90 ${cy-30}" ${w}/>`;
+if(n>=70)h+=`<circle cx="${L+8}" cy="${cy-14}" r="2" fill="#a8795a" opacity=".5"/><circle cx="${R-10}" cy="${cy+6}" r="2" fill="#a8795a" opacity=".5"/>`;
+if(n>=45&&Math.floor(n)%2===0)h+=`<circle cx="67" cy="${cy-3}" r="10" fill="#fff" fill-opacity=".15" stroke="#333" stroke-width="2"/><circle cx="93" cy="${cy-3}" r="10" fill="#fff" fill-opacity=".15" stroke="#333" stroke-width="2"/><path d="M77 ${cy-4}H83M${L} ${cy-5}L57 ${cy-4}M${R} ${cy-5}L103 ${cy-4}" stroke="#333" stroke-width="2"/>`;
+if(sick)h+=`<path d="M${R-2} ${cy-ry+18}q-6 9 0 12q6-3 0-12z" fill="#7fc4ee"/>`;
+return `<svg viewBox="0 0 160 190">${h}</svg>`}
+function label(c){const sx=c.s==='F'?'여':c.s==='M'?'남':'성별 미상';const ag=c.a?(c.a.includes('개월')?c.a:c.a+'세'):'나이 미상';return `${sx} · ${ag}`}
+function render(){const c=deck[i];$('cnt').textContent=(i+1)+' / '+deck.length;
+$('card').innerHTML=back?`<div class="cc">${c.cc}</div><div class="meta">${label(c)}</div><div class="say">“${c.t}”</div><div class="hint">탭하면 앞면으로</div>`
+:`${av2(c.s,c.a,c.t)}<div class="meta">${label(c)}</div><div class="say">“${c.t}”</div><div class="hint">어떤 CC 모듈일까요? 탭해서 확인</div>`;
+$('fl').textContent=back?'앞면':'정답 보기'}
+function go(d){i=(i+d+deck.length)%deck.length;back=false;render()}
+function flip(){back=!back;render()}
+$('card').onclick=flip;$('fl').onclick=flip;$('pv').onclick=()=>go(-1);$('nx').onclick=()=>go(1);
+$('sh').onclick=()=>{for(let j=deck.length-1;j>0;j--){const k=Math.floor(Math.random()*(j+1));[deck[j],deck[k]]=[deck[k],deck[j]]}i=0;back=false;render()};
+$('f').onchange=e=>{deck=all.filter(c=>!e.target.value||c.cc===e.target.value);i=0;back=false;render()};
+document.onkeydown=e=>{if(e.key==='ArrowRight')go(1);else if(e.key==='ArrowLeft')go(-1);else if(e.key===' '){e.preventDefault();flip()}};
+render();
+</script></body></html>
