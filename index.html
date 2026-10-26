@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>임종평 알렌 1회독 달력</title>
+<style>
+:root{--bg:#f2f4f7;--card:#fff;--text:#1c2430;--muted:#667085;--line:#dde2ea;--accent:#2a5db0;--rest:#e9ecf6;--done:#e2f3e8;--exam:#fde6e3;--examt:#b3342a;--today:#d9822b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--card:#1d2128;--text:#e6e8ec;--muted:#9aa3b0;--line:#313843;--accent:#7aa7f0;--rest:#222839;--done:#1b3326;--exam:#3b1f1c;--examt:#ff8d80;--today:#f0a45a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171c;--card:#1d2128;--text:#e6e8ec;--muted:#9aa3b0;--line:#313843;--accent:#7aa7f0;--rest:#222839;--done:#1b3326;--exam:#3b1f1c;--examt:#ff8d80;--today:#f0a45a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;line-height:1.4}
+main{max-width:1100px;margin:0 auto;padding:16px 12px 40px}
+h1{font-size:22px;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.stat{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin:6px 0 14px}
+.tabs{display:flex;gap:6px;margin-bottom:10px;align-items:center}
+.tabs button{font:inherit;font-size:14px;padding:6px 14px;border-radius:16px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tabs .reset{margin-left:auto;font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.dow{text-align:center;font-size:12px;color:var(--muted);padding:2px 0}
+.cell{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px;min-height:130px;font-size:12px}
+.cell.blank{background:transparent;border:none}
+.cell.rest{background:var(--rest)}
+.cell.done{background:var(--done)}
+.cell.exam{background:var(--exam);border-color:var(--examt)}
+.cell.today{outline:2px solid var(--today)}
+.num{font-weight:700;font-size:14px}
+.sun .num{color:var(--examt)}
+.ttl{font-size:11px;color:var(--muted);margin-left:4px}
+.dl{display:none;font-size:12px;color:var(--muted);margin-left:6px}
+label.t{display:flex;gap:5px;align-items:flex-start;margin-top:4px;cursor:pointer}
+label.t input{margin:2px 0 0;flex:none;accent-color:var(--accent)}
+label.t.on span{color:var(--muted);text-decoration:line-through}
+.restmsg{margin-top:6px;color:var(--muted)}
+.exammsg{margin-top:6px;font-weight:700;color:var(--examt)}
+@media (max-width:760px){
+.grid{grid-template-columns:1fr}.dow{display:none}.cell.blank{display:none}
+.cell{min-height:0;font-size:15px}.dl{display:inline}
+label.t input{width:18px;height:18px}
+}
+</style>
+</head>
+<body>
+<main>
+<h1>임종평 알렌 1회독</h1>
+<p class="sub" id="dday"></p>
+<div class="bar"><i id="fill"></i></div>
+<div class="stat"><span id="cnt"></span><span id="pct"></span></div>
+<div class="tabs">
+<button id="t10">10월</button><button id="t11">11월</button>
+<button class="reset" id="reset">전체 초기화</button>
+</div>
+<div class="grid" id="cal"></div>
+</main>
+<script>
+var YEAR=2026, EXAM=new Date(2026,10,26);
+var ST=['단원 문제 풀이','자기 전 어제 분량 복습'];
+var R1='완료 과목 복습 30분: ', R2='완료 과목 오답 복습 30분: ';
+var REV={
+'10-26':R1+'순환기','10-27':R1+'호흡기','10-28':R1+'소화기(식도·위·장)','10-29':R1+'소화기(간·담·췌)','10-30':R1+'내분비',
+'11-2':R1+'류마티스','11-3':R1+'신장(전해질·산염기·AKI·CKD)','11-4':R1+'산과','11-5':R2+'순환기','11-6':R2+'호흡기',
+'11-9':R2+'소화기','11-10':R2+'내분비','11-11':R2+'류마티스','11-12':R2+'신장','11-13':R2+'산과',
+'11-16':R2+'순환기','11-17':R2+'호흡기','11-18':R2+'소화기','11-19':R2+'내분비','11-20':R2+'류마티스·신장·산과'
+};
+// [month, day, type, title, items]  type: s=공부, c=보충, r=휴식, f=최종점검, x=시험
+var P=[
+[10,26,'s','신장',['사구체질환: 급성 신염증후군·신증후군·기타']],
+[10,27,'s','신장·산과',['신장: 세관사이질·혈관·다낭신·요로돌·요로감염','산과 잔여: 임신의 내·외과 질환']],
+[10,28,'s','부인과 1',['가족계획·불임·무월경·PCOS·폐경·비정상 자궁출혈','골반통·선천기형·감염·비뇨부인']],
+[10,29,'s','부인과 2',['근종·자궁내막증·샘근육증','CIN·자궁경부암·내막증식증·내막암','난소종양·외음부암·임신융모질환']],
+[10,30,'s','감염 1',['총론·지역사회/병원 내 감염','호중구감소성 발열','그람양성균']],
+[10,31,'c','보충',['밀린 분량 보충','소화기 빈칸 채우기(HEP·PBC·PSC·Lynch)']],
+[11,1,'r'],
+[11,2,'s','감염 2',['그람음성균·스피로헤타·리케차']],
+[11,3,'s','감염 3',['바이러스·진균','원생동물·기생충·성인 예방접종']],
+[11,4,'s','혈액 1',['빈혈 전체(소적혈구·거대적혈모구·재생불량·용혈)']],
+[11,5,'s','혈액 2',['출혈질환·혈소판·응고·DIC','백혈병·림프종·기타 혈액암','종양의 진단·치료·합병증']],
+[11,6,'s','소아 1',['신생아(고위험·분만손상·가사·호흡기·소화기·황달)']],
+[11,7,'c','보충',['밀린 분량 보충']],
+[11,8,'r'],
+[11,9,'s','소아 2',['감염병','소화기·호흡기 질환']],
+[11,10,'s','소아 3',['심혈관·면역·결체조직','혈액·종양']],
+[11,11,'s','소아 4',['신요로·내분비·신경','골격·알레르기·손상·중독','성장발달·예방접종']],
+[11,12,'s','외과 1',['쇼크·수혈','신진대사·창상·수술 전 처치·합병증']],
+[11,13,'s','외과 2',['외상·화상·뱀/동물물림']],
+[11,14,'c','보충',['밀린 분량 보충']],
+[11,15,'r'],
+[11,16,'s','외과 3',['갑상선·유방·탈장','혈관·흉부 등 각론']],
+[11,17,'s','신경과',['신경과 전체(핵심 위주)']],
+[11,18,'s','정신과',['정신건강의학과 전체(핵심 위주)']],
+[11,19,'s','응급·비뇨',['응급의학','비뇨기과']],
+[11,20,'s','기타 과',['정형·신경외','안과·이비인후과·피부']],
+[11,21,'c','예방·보충',['예방의학·의료법규 핵심','밀린 분량 마무리']],
+[11,22,'r'],
+[11,23,'f','내과 회독',['순환기·호흡기·소화기 오답','신장·내분비·류마티스 오답']],
+[11,24,'f','과목 회독',['감염·혈액종양 오답','산부인과·소아·외과 오답']],
+[11,25,'f','마무리',['기타 과 오답 + 약점 보강','일찍 취침']],
+[11,26,'x']
+];
+var DOW=['일','월','화','수','목','금','토'];
+var saved={}, SK='imjong-allen-v1';
+try{saved=JSON.parse(localStorage.getItem(SK)||'{}')||{}}catch(e){saved={}}
+function save(){try{localStorage.setItem(SK,JSON.stringify(saved))}catch(e){}}
+var plan={}, total=0;
+P.forEach(function(p){
+  var m=p[0],d=p[1],t=p[2],items=[];
+  if(t==='s'||t==='c'||t==='f'){items=p[4].slice();if(t==='s'){items=items.concat(ST);if(REV[m+'-'+d])items.push(REV[m+'-'+d])}}
+  plan[m+'-'+d]={t:t,title:p[3]||'',items:items};
+  total+=items.length;
+});
+var now=new Date(), todayKey=(now.getFullYear()===YEAR)?(now.getMonth()+1)+'-'+now.getDate():'';
+var month=(now.getFullYear()===YEAR&&now.getMonth()===9)?10:(now.getFullYear()===YEAR&&now.getMonth()===10)?11:10;
+function id(k,i){return k+'#'+i}
+function stats(){
+  var n=0;Object.keys(plan).forEach(function(k){plan[k].items.forEach(function(_,i){if(saved[id(k,i)])n++})});
+  var pct=total?Math.round(n/total*100):0;
+  document.getElementById('fill').style.width=pct+'%';
+  document.getElementById('cnt').textContent=n+' / '+total+' 완료';
+  document.getElementById('pct').textContent=pct+'%';
+  var dd=Math.ceil((EXAM-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);
+  document.getElementById('dday').textContent=dd>0?'시험까지 D-'+dd+' (11월 26일) · 일요일은 쉬는 날':dd===0?'오늘이 시험일입니다':'시험이 끝났습니다';
+}
+function render(){
+  var cal=document.getElementById('cal');cal.innerHTML='';
+  DOW.forEach(function(w){var h=document.createElement('div');h.className='dow';h.textContent=w;cal.appendChild(h)});
+  var first,last;
+  if(month===10){first=new Date(YEAR,9,25);last=new Date(YEAR,9,31)}
+  else{first=new Date(YEAR,10,1);last=new Date(YEAR,10,30)}
+  var d=new Date(first);
+  var pad=(month===10)?0:first.getDay();
+  for(var i=0;i<(month===10?first.getDay():pad);i++){var b=document.createElement('div');b.className='cell blank';cal.appendChild(b)}
+  while(d<=last){
+    var key=(d.getMonth()+1)+'-'+d.getDate(), p=plan[key], c=document.createElement('div');
+    c.className='cell';
+    if(!p){c.className+=' blank';cal.appendChild(c);d.setDate(d.getDate()+1);continue}
+    if(d.getDay()===0)c.className+=' sun';
+    if(p.t==='r')c.className+=' rest';
+    if(p.t==='x')c.className+=' exam';
+    if(key===todayKey)c.className+=' today';
+    var head=document.createElement('div');
+    head.innerHTML='<span class="num">'+d.getDate()+'</span><span class="dl">('+DOW[d.getDay()]+')</span>'+(p.title?'<span class="ttl">'+p.title+'</span>':'');
+    c.appendChild(head);
+    if(p.t==='r'){var r=document.createElement('div');r.className='restmsg';r.textContent='휴식';c.appendChild(r)}
+    if(p.t==='x'){var x=document.createElement('div');x.className='exammsg';x.textContent='임종평 시험';c.appendChild(x)}
+    p.items.forEach(function(txt,i){
+      var lb=document.createElement('label'),cb=document.createElement('input'),sp=document.createElement('span');
+      lb.className='t'+(saved[id(key,i)]?' on':'');cb.type='checkbox';cb.checked=!!saved[id(key,i)];sp.textContent=txt;
+      cb.addEventListener('change',function(){
+        if(cb.checked)saved[id(key,i)]=1;else delete saved[id(key,i)];
+        save();lb.className='t'+(cb.checked?' on':'');refreshDone(c,key);stats();
+      });
+      lb.appendChild(cb);lb.appendChild(sp);c.appendChild(lb);
+    });
+    refreshDone(c,key);
+    cal.appendChild(c);d.setDate(d.getDate()+1);
+  }
+  document.getElementById('t10').className=month===10?'on':'';
+  document.getElementById('t11').className=month===11?'on':'';
+}
+function refreshDone(c,key){
+  var p=plan[key],all=p.items.length>0;
+  p.items.forEach(function(_,i){if(!saved[id(key,i)])all=false});
+  if(all)c.classList.add('done');else c.classList.remove('done');
+}
+document.getElementById('t10').onclick=function(){month=10;render()};
+document.getElementById('t11').onclick=function(){month=11;render()};
+var rb=document.getElementById('reset'),armed=false;
+rb.onclick=function(){
+  if(!armed){armed=true;rb.textContent='한 번 더 누르면 초기화';setTimeout(function(){armed=false;rb.textContent='전체 초기화'},3000);return}
+  saved={};save();armed=false;rb.textContent='전체 초기화';render();stats();
+};
+render();stats();
+</script>
+</body>
+</html>
